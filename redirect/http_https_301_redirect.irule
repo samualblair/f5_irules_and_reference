@@ -1,0 +1,7 @@
+# Name: Simple F5 iRule for HTTP to HTTPS Redirect - Using 301 Response Code
+# Author: Michael Johnson
+
+when HTTP_REQUEST priority 500 {
+    set host [HTTP::host]
+    HTTP::respond 301 Location "https://$host/"
+}
