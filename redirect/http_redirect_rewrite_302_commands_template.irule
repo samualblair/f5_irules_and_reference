@@ -1,0 +1,63 @@
+# Name: Template of Redirect/Rewrite with an HTTP 302 response code
+# Author: Michael Johnson
+
+when HTTP_REQUEST priority 500 {
+
+    # Method 1 if equals
+    if { [HTTP::uri] equals "/" } {
+        HTTP::redirect "https://xyz.example.com"
+    }
+
+    # Method 2 if contains
+    if { [HTTP::uri] contains "test=" } {
+        HTTP::redirect "https://xyz.example.com"
+    }
+
+    # Method 3 dynamically map (HTTP to HTTPS)
+    set host [HTTP::host]
+    HTTP::respond 302 Location "https://$host/"
+
+    # Method 4, more extensive mapping , based on uri
+    switch -glob -- [HTTP::uri] {
+        # Match Exactly "/" and rewrite request to server to be "/examplepath/"
+        "/" {
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/" "/examplepath/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+            } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        # Match Exactly "testpath" and rewrite request to server to be "/examplepath/"
+        "/testpath" {
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/" "/examplepath/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+            } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        # Match Anything starting with "/testpath/" and rewrite request to server to be "/examplepath/"
+        "/testpath/*" {
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/" "/examplepath/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+            } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        default {
+            # don't do anything...
+        }
+    }
+
+    # Method 5 (simpler rewrite)
+    if { [HTTP::uri] starts_with "/sometext" } {
+        set uri [string map -nocase {"/sometext" "/newtext"} [HTTP::uri]]
+        HTTP::uri $uri
+    }
+
+}
