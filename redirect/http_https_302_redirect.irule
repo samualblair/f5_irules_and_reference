@@ -1,0 +1,8 @@
+# Name: http_https_302_redirect
+# Author: Michael Johnson
+# Description: Simple F5 iRule for HTTP to HTTPS Redirect - Using 302 (temporary redirect) Response Code , Not preffered for long-standing redirect
+
+when HTTP_REQUEST priority 500 {
+    set host [HTTP::host]
+    HTTP::respond 302 Location "https://$host/"
+}
