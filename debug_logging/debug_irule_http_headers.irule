@@ -4,7 +4,7 @@
 #### DEUBG LOGGING IRULE - ONLY RUN FOR TESTING #######
 
 when HTTP_REQUEST priority 400 {
-    if {[string match "*\connecttest.expresspoll.net/main.33adb0941daa036f.js/*" [HTTP::path]]} {
+    if {[string match "*\examplesite.example.com/main.js/*" [HTTP::path]]} {
         log local0. "APP request Received request from [IP::client_addr]"
         log local0. "APP request HTTP Method = [HTTP::method]"
         log local0. "APP request HTTP URI = [HTTP::uri]"
@@ -15,9 +15,11 @@ when HTTP_REQUEST priority 400 {
         log local0. "APP request HTTP User Agent Header = [HTTP::header value "user-agent"]"
         log local0. "APP request POST Body = [HTTP::payload]"        
     }
+
     log local0. "APP request-Updated from [IP::client_addr] -> [HTTP::host][HTTP::uri]"
     log local0. "APP request-Updated Http X-Forwarded-Host is [HTTP::header value "X-Forwarded-Host"]"
     log local0. "APP request-Updated Http X-Forwarded-For is [HTTP::header value "X-Forwarded-For"]"
+
 }
 when HTTP_REQUEST_SEND priority 400 {    
     HTTP::header remove "X-Forwarded-For"
@@ -32,13 +34,12 @@ when HTTP_REQUEST_SEND priority 400 {
 
 }
 when HTTP_RESPONSE priority 400 {
+    log local0. "APP Response from [IP::client_addr]"
+    log local0. "APP Response HTTP Host Header = [HTTP::header value "host"]"
+    log local0. "APP Response POST Body = [HTTP::payload]"
+    log local0. "APP Response HTTP Status = [HTTP::status]"
 
-        log local0. "APP Response from [IP::client_addr]"
-        log local0. "APP Response HTTP Host Header = [HTTP::header value "host"]"
-        log local0. "APP Response POST Body = [HTTP::payload]"
-        log local0. "APP Response HTTP Status = [HTTP::status]"
-
-        foreach sHeader [HTTP::header names] {
-            log local0. "APP HTTP Response Headers: $sHeader: [HTTP::header value $sHeader]"
-        }
+    foreach sHeader [HTTP::header names] {
+        log local0. "APP HTTP Response Headers: $sHeader: [HTTP::header value $sHeader]"
+    }
 }
