@@ -1,0 +1,162 @@
+# Name: large_example_pool_assignment_and_rewrite
+# Author: Michael Johnson
+# Description: Template of pool selection and rewrite based on glob matching
+
+# Example of microservices app, mutiple servers deployed using Esri ArcGis mapping
+# F5 configuration below provides routing, similar to what NodeJS 'Express' route web server may do
+# Some of this can be done in F5 'rewrite' profiles, and this irule catches the rest
+# Alternativly this irule could be expanded in functionality to also elminate need for any rewrite profile if desired
+
+when HTTP_REQUEST priority 400 {
+
+    # Use Switch instead of many if,elif,else type statements
+    # Current style works well, but does introduce some edge cases (exact matches required in URI)
+    # May look into keying in on HTTP::path instead of just uri, but would require additional if logic to catch no path cases
+    switch -glob -- [HTTP::uri] {
+        "/portal" {
+        # Simple redirect only when portal without trailing / is targeted
+            if { [HTTP::host] equals "map.example.com"} {
+                if { [HTTP::path] equals "/portal" } {
+                  HTTP::redirect "https://map.example.com/portal/"
+                }
+            }
+        }
+        "/portal/*" {
+        # Translating to /arcgis as portal is not in rewrite profile due to multiple host headers required
+            pool "/partition-map/mapapp/map-portal"
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/portal/" "/arcgis/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+             } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        } 
+        "/portal*" {
+        # Edge case when client fails to add trailing / in request
+        # Translating to /arcgis as portal is not in rewrite profile due to multiple host headers required
+            pool "/partition-map/mapapp/map-portal"
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/portal" "/arcgis/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+             } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        "/hosting" {
+        # Edge case when client fails to add trailing / in request
+            pool "/partition-map/mapapp/map-hosting"
+            HTTP::header replace Host "map.example.com"
+            HTTP::header insert X-Forwarded-Host map.example.com
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/hosting" "/hosting/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+            } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        "/hosting/*" {
+            pool "/partition-map/mapapp/map-hosting"
+            HTTP::header insert X-Forwarded-Host map.example.com
+        }
+        "/gasmaps" {
+        # Edge case when client fails to add trailing / in request
+            pool "/partition-map/mapapp/map-gasmaps"
+            HTTP::header replace Host "map.example.com"
+            HTTP::header insert X-Forwarded-Host map.example.com
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/gasmaps" "/gasmaps/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+            } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        "/gasmaps/*" {
+            pool "/partition-map/mapapp/map-gasmaps"
+            HTTP::header insert X-Forwarded-Host map.example.com
+        }
+        "/electricmaps" {
+        # Edge case when client fails to add trailing / in request
+            pool "/partition-map/mapapp/map-electricmaps"
+            HTTP::header replace Host "map.example.com"
+            HTTP::header insert X-Forwarded-Host map.example.com
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/electricmaps" "/electricmaps/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+            } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        "/electricmaps/*" {
+            pool "/partition-map/mapapp/map-electricmaps"
+            HTTP::header insert X-Forwarded-Host map.example.com
+        }
+        "/geoprocessing" {
+        # Edge case when client fails to add trailing / in request
+            pool "/partition-map/mapapp/map-geoprocessing"
+            HTTP::header replace Host "map.example.com"
+            HTTP::header insert X-Forwarded-Host map.example.com
+            set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+            set newpath [string map -nocase {"/geoprocessing" "/geoprocessing/"} $path]
+            if {$query eq ""} {
+             HTTP::uri "$newpath" 
+            } else {
+             HTTP::uri "$newpath?$query" 
+            }
+        }
+        "/geoprocessing/*" {
+            pool "/partition-map/mapapp/map-geoprocessing"
+            HTTP::header insert X-Forwarded-Host map.example.com
+        }
+        default {
+            # Currently default if not other match , don't do anything...
+            # May be desirable to instead set default error response, or account for favicon, etc...
+        }
+    }
+
+}
+when HTTP_REQUEST_SEND priority 400 {    
+
+    # Account for special cases of pool member talking to pool member via API
+    if { [LB::server addr] eq "192.0.2.100%2" } {
+        HTTP::header remove Host
+        HTTP::header insert Host "example1portal.example.com"
+        HTTP::header remove "X-Forwarded-Host"
+        HTTP::header insert "X-Forwarded-Host" "map.example.com"
+        #HTTP::header remove "X-Forwarded-For"
+        #HTTP::header insert "X-Forwarded-For" [IP::client_addr]
+    }
+    
+}
+when HTTP_RESPONSE priority 400 {
+
+    # portal
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1portal.example.com/arcgis" "https://map.example.com/portal"} [HTTP::header Location]]
+        }
+    # portal - 'bug' identified where Portal is not rewriting properly for oAuth requests - it is not replying with X-Forwarded-Host host in location but is providing the public path
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1portal.example.com/" "https://map.example.com/"} [HTTP::header Location]]
+        }
+    # hosting
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1gist.example.com/arcgis" "https://map.example.com/hosting"} [HTTP::header Location]]
+        }
+    # gasmaps
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1gas.example.com/arcgis" "https://map.example.com/gasmaps"} [HTTP::header Location]]
+        }
+    # electricmaps
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1electric.example.com/arcgis" "https://map.example.com/electricmaps"} [HTTP::header Location]]
+        }
+    # geoprocessing
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1geo.example.com/arcgis" "https://map.example.com/geoprocessing"} [HTTP::header Location]]
+        }
+
+}
