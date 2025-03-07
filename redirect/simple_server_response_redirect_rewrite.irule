@@ -1,0 +1,34 @@
+# Name: simple_server_response_redirect_rewrite
+# Author: Michael Johnson
+# Description: Simple F5 iRule for Response Re-writing - examples updating server generated redirects
+
+when HTTP_RESPONSE priority 500 {
+    # Catch and replace redirect headers - Headers server is sending to user, based on an application framework that may be misconfigured or purposfully generic
+
+    # Log value at start
+    if {[HTTP::header exists Location] } {
+        log local0. "Received redirect was [IP::server_addr] -> [HTTP::header Location]"
+    }
+
+    # Try first match/replace
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1portal.example.com/framework" "https://maps.example.com/portal"} [HTTP::header Location]]
+    }
+    # Try next match/replace - Example 'bug' identified where Portal is not rewriting properly for oAuth requests - it is not replying with X-Forwarded-Host host in location but is providing the public path
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1portal.example.com/framework" "https://maps.example.com/portal"} [HTTP::header Location]]
+    }
+    # Try Next match/replace
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1micro.example.com/framework" "https://maps.example.com/micro"} [HTTP::header Location]]
+    }
+    # Example simple match and replace
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"https://example1portal.example.com" "https://maps.example.com"} [HTTP::header Location]]
+    }
+    # Log the value after matching logic
+    if {[HTTP::header exists Location] } {
+        log local0. "Updated redirect now [IP::server_addr] -> [HTTP::header Location]"
+    }
+
+}
