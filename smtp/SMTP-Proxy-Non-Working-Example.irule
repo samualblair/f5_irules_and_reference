@@ -1,0 +1,237 @@
+#
+# Based on iRule from devcentral.f5.com (http://devcentral.f5.com/s/wiki/default.aspx/iRules/SMTPProxy.html)
+# Edited by Terje Gravvold for Trygdeetaten/NAV 2006
+# Edited by James Denton for Rackspace/2011
+#
+# Version 0.3.20111101 (Not production stable, only for testing)
+#
+# To-do:
+# * Write more effective regexps, reduce amount of regsub and regexp calls.
+# * Implement better and more unified logging (More log levels?)
+# * Implement proper SMTP RSET handling.
+# * Implement proper SMTP NOOP handling (if it we should support it).
+# * General code optimalization.
+# * SMTP address syntax checking? regexps form http://www.regular-expressions.info/email.html
+#
+# Whats new:
+# * Regexps related to SMTP command checking is substituted with string commands. Much better performance.
+# * Fixed some minor errors in logging.
+# * Some code optimalisation.
+# * (JD) Replaced matchclass commands with class commands for v10+ optimization
+# * (JD) Only evaluate MAIL FROM to make a LB decision
+#
+# What's been removed:
+# * RblListIP
+# * BlockFromUser
+#
+# Remember to define these iRule Data Group Lists:
+# * (JD) MailAddrList - List of mail rcpt addresses to loadbalance to a special pool (type=string)
+
+#
+# When the client is accepted by the system:
+# - Initiate variables for later use.
+# - Respond to to the client with a SMTP greeting.
+# - Start collecting TCP data.
+#
+
+when CLIENT_ACCEPTED {
+    set chelo ""
+    set cfrom ""
+    set cdata ""
+
+    # Set log level 0=none, 1=log rejects, 2=debug
+    set debug "2"
+    set myorg "F5Quantumspin"
+    set mymailhost "mail.quantumspin.us"
+    set client_quit 0
+    set ehlo 0
+
+    TCP::respond "220 F5 mail proxy for $myorg. Please report issues to $myorg technical support.\r\n"
+    if { $debug >= 2 } { log local0. "client [IP::client_addr] accepted" }
+    TCP::collect
+}
+
+#
+# This section handles the clientside connection, that is TCP data between client and BigIP.
+#
+
+when CLIENT_DATA {
+    set cdata [TCP::payload]
+
+    #
+    # Return on empty payload.
+    #
+
+    if { [ string length [TCP::payload] ] <= 0 } {
+       return
+    }
+
+    #
+    # If payload doesn't contain carriage return we have to collect more data, return.
+    #
+
+    if { not ( [TCP::payload] contains "\r\n" ) } {
+       return
+    }
+
+    #
+    # HELO - Catch SMTP HELO/EHLO commands
+    #
+
+    if { [string match -nocase "HELO*" [TCP::payload]] } {
+        set chelo [TCP::payload]
+        if { $debug >= 2 } { log local0. "get helo <$cdata>" }
+        TCP::respond "250 $mymailhost. Hello!\r\n"
+        TCP::payload replace 0 [string length [TCP::payload]] ""
+        set ehlo 0
+        return
+    }
+
+    if { [string match -nocase "EHLO*" [TCP::payload]] } {
+        set chelo [TCP::payload]
+        if { $debug >= 2 } { log local0. "get helo <$cdata>" }
+            TCP::respond "250-$mymailhost. Hello!\r\n"
+            TCP::payload replace 0 [string length [TCP::payload]] ""
+        set ehlo 1
+        return
+    }
+
+#
+# NOOP - Do nothing? great!
+#
+
+    if { [string match -nocase "NOOP*" $cdata] } {
+        if { $debug >= 2 } { log local0. "NOOP - Doing nothing, tralala..." }
+        TCP::respond "250 Ok\r\n"
+        TCP::payload replace 0 [string length [TCP::payload]] ""
+        return
+    }
+          
+#
+# RSET - Clear prior data
+#
+
+if { [string match -nocase "RSET*" $cdata] } {
+if { $debug >= 2 } { log local0. "RSET - Clear variables..." }
+set cfrom ""
+set cdata ""
+TCP::respond "250 OK\r\n"
+TCP::payload replace 0 [string length [TCP::payload]] ""
+return
+}
+
+#
+# QUIT - See you later...
+#
+
+if { [string match -nocase "QUIT*" $cdata] } {
+if { $debug >= 2 } { log local0. "QUIT recived from client, closing connection to [IP::client_addr]." }
+TCP::respond "221 Bye\r\n"
+TCP::payload replace 0 [string length [TCP::payload]] ""
+set client_quit 1
+TCP::close
+return
+}
+
+
+#
+# MAIL FROM - Who's calling?
+#
+
+if { [string match -nocase "MAIL FROM:*" $cdata] } {
+set cfrom [TCP::payload]
+   set fromaddr [regsub -all \[\\r\\n\\s\] $cfrom ""]
+   set fromaddr [findstr $fromaddr ":" 1]
+   set fromdomain [findstr $fromaddr "@" 1]
+   
+   if { $fromaddr equals "" } {
+if { $debug >= 2 } { log local0. "Empty from address not allowed." }
+TCP::respond "501 Syntax: MAIL FROM: <address>\r\n"
+TCP::payload replace 0 [string length $cfrom] ""
+set cfrom ""
+return
+}
+if { $debug >= 2 } { log local0. "get from <$cfrom>" }
+   if { $debug >= 2 } { log local0. "From domain: <$fromdomain>" }
+   TCP::respond "250 OK\r\n"
+   TCP::payload replace 0 [string length $cfrom] ""
+
+
+# If the MAIL FROM address equals a string from the MailAddrList string class,
+# then load balance the connection to the specified pool in the class for further processing.
+if { [ class match $fromdomain equals "MailAddrList" ] } {
+set smtp_pool [ class match -value -- $fromdomain equals "MailAddrList" ]
+pool $smtp_pool
+set server_ip [LB::server addr]
+if { $debug >= 2 } { log local0. "Pool [LB::server pool] selected..." }
+} else {
+if { $debug >= 2 } { log local0. "Default pool [LB::server pool] selected..."  }
+}
+TCP::payload replace 0 0 $chelo$cfrom
+if { $debug >= 2 } { log local0. "Client = [IP::client_addr], Payload = <[TCP::payload]>" }
+TCP::release
+if { $debug >= 2 } { log local0. "Releasing data from client ([IP::client_addr]) to server ([IP::server_addr])." }
+#TCP::collect
+} else {
+if { $debug >= 2 } { log local0. "Syntax error - Invalid SMTP command [TCP::payload]." }
+TCP::respond "502 Error: command not implemented\r\n"
+TCP::payload replace 0 [string length [TCP::payload]] ""
+return
+}
+}
+
+
+#
+# Serverside connection handling
+#
+
+when SERVER_CONNECTED {
+    if { $debug >= 2 } { log "Server [IP::server_addr] connected" }
+    TCP::collect
+}
+
+when SERVER_DATA {
+    set sdata [TCP::payload]
+
+# Filter SMTP 220 status messages from server to client. We have already sent HELO/EHLO reply.
+if { $sdata starts_with "220" } {
+log local0. "get data <$sdata>"
+TCP::payload replace 0 [string length $sdata] ""
+return
+    }
+# Filter all 250 status messages from server to client. We've sent them before. Keep everything else.
+if { $sdata starts_with "250-" or "250 " } {
+if { $debug >= 2 } { log local0. "sdata before filter <$sdata>" }
+set reg1 "\[\\r\\n\]"
+set reg2 "\[\{\]"
+set reg3 "\[\}\\s\]"
+set reg4 "\[\}\]"
+set fltsdata ""
+set fltsdata $fltsdata[regexp -all -line -inline (?!^250.*)^.* $sdata]
+set fltsdata [regsub -all $reg1 $fltsdata ""]
+set fltsdata [regsub -all $reg2 $fltsdata ""]
+set fltsdata [regsub -all $reg3 $fltsdata "\r\n"]
+set fltsdata [regsub -all $reg4 $fltsdata ""]
+if { $debug >= 2 } { log local0. "sdata after filter <$fltsdata>" }
+TCP::payload replace 0 [string length $sdata] $fltsdata
+if { $debug >= 2 } { log local0. "TCP payload = [TCP::payload]" }
+TCP::release
+return
+    }
+
+if { [ string length $sdata ] <= 0 } {
+return
+}
+
+if { $debug >= 2 } { log local0. "payload from server to client <[TCP::payload]>" }
+TCP::release
+TCP::collect
+}
+
+when CLIENT_CLOSED {
+if { $client_quit }  {
+if { $debug >= 2 } { log local0. "client [IP::client_addr] closed connection before server connected." }
+} else {
+if { $debug >= 2 } { log local0. "client [IP::client_addr] closed connection to server." }
+}
+}
