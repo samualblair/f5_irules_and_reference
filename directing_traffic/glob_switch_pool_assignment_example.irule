@@ -1,0 +1,28 @@
+# Name: glob_switch_pool_assignment_example
+# Author: Michael Johnson
+# Description: Template of pool selection based on glob matching
+
+# glob matching (similar to regex - not as robust , yet faster and first match):
+# item* -- starts with item 
+# *item -- ends with item 
+# *item* -- contains item 
+
+when HTTP_REQUEST priority 500 { 
+    switch -glob -- [string tolower [HTTP::uri]] {
+        "/filetransfer*" {
+            pool "mix_prod_v1_filetransfer" 
+            } 
+        "*/view.net" {
+            pool "mix_prod_v1_view" 
+            } 
+        "*/webimagedownloader/*" {
+            pool "mix_prod_v1_webimage" 
+            } 
+        default {
+            pool "mix2prod.test_pool" 
+        } 
+    } 
+}
+
+# virtual "/abc-app-dev/np-api-vip"
+# virtual "/Common/abc-app-dev/np-api-vip"

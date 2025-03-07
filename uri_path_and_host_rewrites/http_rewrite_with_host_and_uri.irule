@@ -1,3 +1,7 @@
+# Name: http_rewrite_with_host_and_uri
+# Author: Michael Johnson
+# Description: Template of Rewrite
+
 when HTTP_REQUEST priority 500 {
 
   # Explicit rewrite but also Host Header update as well)
