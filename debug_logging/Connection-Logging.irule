@@ -1,3 +1,5 @@
+# Name: Simple Connection Logging irule Examples
+# Author: Michael Johnson
 
 # Log L4 (TCP) Connection information
 when SERVER_CONNECTED priority 500 {
