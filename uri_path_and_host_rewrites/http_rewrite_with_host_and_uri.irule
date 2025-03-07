@@ -1,0 +1,13 @@
+when HTTP_REQUEST priority 500 {
+
+  # Explicit rewrite but also Host Header update as well)
+  set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+  HTTP::header replace Host "new.example.com"
+  set newpath [string map -nocase {"/oldpath" "/newpath"} $path]
+  if {$query eq ""} {
+    HTTP::uri "$newpath" 
+  } else {
+    HTTP::uri "$newpath?$query" 
+  }
+
+}
