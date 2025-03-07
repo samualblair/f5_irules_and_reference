@@ -32,7 +32,7 @@ when HTTP_REQUEST priority 500 {
         # Match Exactly "testpath" and rewrite request to server to be "/examplepath/"
         "/testpath" {
             set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
-            set newpath [string map -nocase {"/" "/examplepath/"} $path]
+            set newpath [string map -nocase {"/testpath" "/examplepath/"} $path]
             if {$query eq ""} {
              HTTP::uri "$newpath" 
             } else {
@@ -42,7 +42,7 @@ when HTTP_REQUEST priority 500 {
         # Match Anything starting with "/testpath/" and rewrite request to server to be "/examplepath/"
         "/testpath/*" {
             set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
-            set newpath [string map -nocase {"/" "/examplepath/"} $path]
+            set newpath [string map -nocase {"/testpath/" "/examplepath/"} $path]
             if {$query eq ""} {
              HTTP::uri "$newpath" 
             } else {
