@@ -1,0 +1,86 @@
+# Name: server_headers
+# Author: Michael Johnson
+# Description: iRule Example for adding / removing security headers
+
+# F5 References
+# https://my.f5.com/manage/s/article/K04436209
+# https://my.f5.com/manage/s/article/K14342
+
+# HTTP_RESPONSE happens when origin server (pool member/serer) responds back to BIG-IP
+# This is a good time to modify Headers destined for client (response headers)
+# Crucially this is before lots of Processing Happens
+# May have chunking considerations
+
+when HTTP_RESPONSE priority 500 {
+
+### Remove Headers:
+
+  if { [HTTP::header exists "Server"] } {
+    HTTP::header remove Server
+  }
+  if { [HTTP::header exists "X-AspNetMvc-Version"] } {
+    HTTP::header remove X-AspNetMvc-Version
+  }
+  if { [HTTP::header exists "X-AspNet-Version"] } {
+    HTTP::header remove X-AspNet-Version
+  }
+  if { [HTTP::header exists "X-Powered-By"] } {
+    HTTP::header remove X-Powered-By
+  }
+  if { [HTTP::header exists "X-Generator"] } {
+    HTTP::header remove X-Generator
+  }
+  if { [HTTP::header exists "X-Powered-CMS"] } {
+    HTTP::header remove X-Powered-CMS
+  }
+
+# Insert Headers:
+# can be used to lock down security policy/policies
+
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
+  HTTP::header insert "X-Frame-Options" "SAMEORIGIN"
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection
+  HTTP::header insert "X-XSS-Protection" "1; mode=block"
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options
+  HTTP::header insert "X-Content-Type-Options" "nosniff"
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy
+  HTTP::header insert "Referrer-Policy" "no-referrer-when-downgrade"
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+  HTTP::header insert "Content-Security-Policy" "default-src https:"
+
+}
+
+# HTTP_RESPONSE_RELEASE happens when origin server (pool member/serer) responds back to BIG-IP
+# This can be a final moment to modify Headers destined for client (response headers)
+# Crucially this is after lots of Processing Happens
+# May have chunking considerations
+# Generally would not use unless needed (maybe removing/changing a header one of the BIG-IP modules added?)
+
+# when HTTP_RESPONSE_RELEASE priority 500 {
+
+#   if { [HTTP::header exists "Xerver"] } {
+#     HTTP::header insert Server [HTTP::header value "Xerver"]
+#     HTTP::header remove Xerver
+#   }
+#   if { [HTTP::header exists "X-XspNetMvc-Version"] } {
+#     HTTP::header insert X-AspNetMvc-Version [HTTP::header value "X-XspNetMvc-Version"]
+#     HTTP::header remove X-XspNetMvc-Version
+#   }
+#   if { [HTTP::header exists "X-XspNet-Version"] } {
+#     HTTP::header insert X-AspNet-Version [HTTP::header value "X-XspNet-Version"]
+#     HTTP::header remove X-XspNet-Version
+#   }
+#   if { [HTTP::header exists "X-Xowered-By"] } {
+#     HTTP::header insert X-Powered-By [HTTP::header value "X-Xowered-By"]
+#     HTTP::header remove X-Xowered-By
+#   }
+#   if { [HTTP::header exists "X-Xenerator"] } {
+#     HTTP::header insert X-Generator [HTTP::header value "X-Xenerator"]
+#     HTTP::header remove X-Xenerator
+#   }
+#   if { [HTTP::header exists "X-Xowered-CMS"] } {
+#     HTTP::header insert X-Powered-CMS [HTTP::header value "X-Xowered-CMS"]
+#     HTTP::header remove X-Xowered-CMS
+#   }
+
+# }

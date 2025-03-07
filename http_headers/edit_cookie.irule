@@ -1,0 +1,41 @@
+# Name: edit_cookie
+# Author: Michael Johnson
+# Description: Simple F5 iRule for template for modifying cookies
+
+# HTTP_RESPONSE happens when origin server (pool member/serer) responds back to BIG-IP
+# This is a good time to modify Headers destined for client (response headers)
+# Crucially this is before lots of Processing Happens
+# May have chunking considerations
+
+when HTTP_RESPONSE priority 500 {
+
+# Update an existing cookie with 'secure' flag
+  set ckname "mycookie" if { [HTTP::cookie exists $ckname] } { HTTP::cookie secure $ckname enable}
+
+# Update the 'Set-Cookie' to the client, for them to set / update their cookies
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+
+# Replace all cookies being set to have Secure and HttpOnly - likely to break non-static sites as this is sweeping
+  if {([HTTP::header exists "http.RES.HEADER" ])}{
+    if {([HTTP::header "http.RES.HEADER"] equals "Set-Cookie")}{
+      HTTP::header replace "http.RES.HEADER" "path=/; Secure; HttpOnly"
+    }
+   }
+
+# Add / Append
+  HTTP::header insert "Set-Cookie" "path=/; Secure; HttpOnly"
+
+}
+
+# HTTP_RESPONSE_RELEASE happens when origin server (pool member/serer) responds back to BIG-IP
+# This can be a final moment to modify Headers destined for client (response headers)
+# Crucially this is after lots of Processing Happens
+# May have chunking considerations
+# Generally would not use unless needed (maybe removing/changing a header one of the BIG-IP modules added?)
+
+# when HTTP_RESPONSE_RELEASE priority 500 {
+
+#     # Update an existing cookie with 'secure' flag
+#     set ckname "mycookie" if { [HTTP::cookie exists $ckname] } { HTTP::cookie secure $ckname enable}
+
+# }
