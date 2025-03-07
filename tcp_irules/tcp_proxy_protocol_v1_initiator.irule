@@ -1,0 +1,14 @@
+# Name: tcp_proxy_protocol_v1_initiator
+# Author: Michael Johnson (Oringal Author unkown)
+# Description: iRule for implementing TCP Proxy Protocol v1 initiator
+
+# Implements Proxy Protocol v1 initiator
+# For details of protocol see https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
+
+when CLIENT_ACCEPTED priority 500 {
+    set proxyheader "PROXY TCP[IP::version] [IP::remote_addr] [IP::local_addr] [TCP::remote_port] [TCP::local_port]\r\n"
+}
+ 
+when SERVER_CONNECTED priority 500 {
+    TCP::respond $proxyheader
+}
