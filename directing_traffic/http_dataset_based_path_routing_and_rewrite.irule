@@ -1,0 +1,52 @@
+# WARNING: UNTESTED IN CURRENT FORM 3-8-2025
+# Name: http_dataset_based_path_routing_and_rewrite
+# Author: Michael Johnson
+# Description: F5 iRule template / example for routing and rewrites based on a dataset
+
+# ltm data-group internal datagroup_rewriteURL {
+#     records {
+#         path1/to/match/ {
+#             data /xyz/
+#         }
+#         path2 {
+#             data /xyz/
+#         }
+#         path3/tomatch {
+#             data /xyz/
+#         }
+#     }
+#     type string
+# }
+
+when HTTP_REQUEST priority 500 {
+
+    # DEBUG: Log Pre Operations - HOST, URI, PATH, QUERY
+    log local0. "Original HOST : [HTTP::host]"
+    log local0. "Original URI  : [HTTP::uri]"
+    log local0. "Original PATH : [HTTP::path]"
+    log local0. "Original QUERY: [HTTP::query]"
+
+    set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+    # Update the Host statically
+    HTTP::host "example.com"
+
+    if {[class match -- $path starts_with datagroup_rewriteURL]} {
+
+        set dgValue [class match -value -- $path eq datagroup_rewriteURL]
+        # This should return /xyz/ if you've set as a string entry in the data group
+
+        #  DEBUG: Log PATH Operation update
+        log local0. "replacing $path with $dgValue"
+
+        set newpath [string map -nocase { $dgValue "/mnp/"} $path]
+        HTTP::uri "$newpath$query"
+
+    }
+
+        # DEBUG: Log Post Operations - HOST, URI, PATH, QUERY
+        log local0. "New HOST : [HTTP::host]"
+        log local0. "New URI  : [HTTP::uri]"
+        log local0. "New PATH : [HTTP::path]"
+        log local0. "New QUERY: [HTTP::query]"
+
+}
