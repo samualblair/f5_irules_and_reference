@@ -1,0 +1,41 @@
+# Name: glob_switch_pool_assignment_example
+# Author: Michael Johnson
+# Description: Template of pool selection based on glob matching
+
+# glob matching (similar to regex - not as robust , yet faster and first match):
+# item* -- starts with item 
+# *item -- ends with item 
+# *item* -- contains item 
+
+# Alternativly could use without glob, but then would expect exact match and no *
+# switch -- [string tolower [HTTP::uri]] {
+
+when HTTP_REQUEST priority 500 { 
+    switch -glob -- [string tolower [HTTP::uri]] {
+        "/filetransfer*" {
+            pool "mix_prod_v1_filetransfer"
+            } 
+        "*/view.net" {
+            pool "mix_prod_v1_view"
+            } 
+        "*/webimagedownloader/*" {
+            pool "mix_prod_v1_webimage"
+            } 
+        default {
+            pool "mix2prod.test_pool"
+
+            # Can now assign to specific Virtual or Pool - One or other not both
+            # virtual "/partition/app-folder/selected-example-vip"
+            # pool "/partition/app-folder/selected-example-pool"
+
+            # If in same context as iRule execution can use short name reference
+            # virtual "virtual_server_name"
+            # virtual "poolname"
+        } 
+    }
+
+    # Optionally add X-Forwarded For and Host headers
+    HTTP::header insert X-Forwarded-For [IP::remote_addr]
+    HTTP::header insert X-Forwarded-Host "external.example.com"
+
+}

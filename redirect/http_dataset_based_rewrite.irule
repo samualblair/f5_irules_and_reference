@@ -26,20 +26,22 @@ when HTTP_REQUEST priority 500 {
     # Alternativly can Check and match it exactly matches the record value - 'equals' instead of 'starts_with'
     # But if using 'equal' then you would need to be mindful of accidental misses that may occur due to more path or paramaters
     if { [set match [class match -value -- "[HTTP::host]:[HTTP::uri]" starts_with url_datagroup]] ne "" } {
+        # ... match is true if the match is made
+        # ... value will be the matched data group value to be used in replacing HTTP:host and HTTP::uri] and applied to variable $match
 
         log local0. "Datagroup match: $match"
-        ## Get first URI path in client request
+        # Get first URI path in client request
         set FIRSTPATH [getfield [HTTP::path] "/" 2]
 
         # Set Original External Host value for use if needed in Response
         set ORIGINALHOST [HTTP::host]
 
-        ## Split match into host and path
+        # Split match into host and path
         set matchlist [split $match ":"]
         set MATCHHOST [lindex $matchlist 0]
         set MATCHPATH [lindex $matchlist 1]
 
-        ## Replace FIRSTPATH with MATCHPATH (from full HTTP::uri)
+        # Replace FIRSTPATH with MATCHPATH (from full HTTP::uri)
         set UPDATEDPATH [string map [list "/$FIRSTPATH" "$MATCHPATH"] [HTTP::uri]]
         log local0. "Updated host: $MATCHHOST"
         log local0. "Updated path: $UPDATEDPATH"
