@@ -5,9 +5,9 @@
 # Inspiration for this taken from https://community[.]f5[.]com/t5/technical-forum/url-uri-rewrite-without-changing-in-client-browser/td-p/301474
 
 # This iRule requires the system to already have a dataset configured with match, and replacement values.
-# See the following example (this example would be named "/Common/url_datagroup" whe way it is shown)
+# See the following example (this example would be named "/Common/datagroup_Name" whe way it is shown)
 #
-# ltm data-group internal url_datagroup {
+# ltm data-group internal datagroup_Name {
 #     records {
 #         www.blah.com:/blah {
 #             data www.test.com:/test
@@ -25,7 +25,7 @@ when HTTP_REQUEST priority 500 {
     # Match first match if it start with the record value - be mindful of accidental matches that may occur
     # Alternativly can Check and match it exactly matches the record value - 'equals' instead of 'starts_with'
     # But if using 'equal' then you would need to be mindful of accidental misses that may occur due to more path or paramaters
-    if { [set match [class match -value -- "[HTTP::host]:[HTTP::uri]" starts_with url_datagroup]] ne "" } {
+    if { [set match [class match -value -- "[HTTP::host]:[HTTP::uri]" starts_with datagroup_Name]] ne "" } {
         # ... match is true if the match is made
         # ... value will be the matched data group value to be used in replacing HTTP:host and HTTP::uri] and applied to variable $match
 
