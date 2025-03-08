@@ -1,0 +1,18 @@
+# Name: http_respond_to_favicon_request_empty_pic
+# Author: Michael Johnson
+# Description: F5 iRule template / example for responding to client requests of favicon.ico (common for browsers, mobile systems, etc) - Simple answer no actual file response
+
+when HTTP_REQUEST priority 200 {
+
+  # Only turn on favicon response if request is favicon
+  if { [HTTP::uri] equals "/favicon.ico" } {
+    set favicon 1
+  } else {
+    set favicon 0
+  }
+
+  # When needed provide a synthetic favicon response
+  if { $favicon} {
+    HTTP::respond -reset 200 -version auto content "" noserver "Content-Type" "image/x-icon"
+  }
+}
