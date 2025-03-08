@@ -1,0 +1,78 @@
+# Name: http_dataset_based_rewrite
+# Author: Michael Johnson
+# Description: F5 iRule template / example for just redirect rewrites based on a dataset
+
+# Inspiration for this taken from https://community[.]f5[.]com/t5/technical-forum/url-uri-rewrite-without-changing-in-client-browser/td-p/301474
+
+# This iRule requires the system to already have a dataset configured with match, and replacement values.
+# See the following example (this example would be named "/Common/url_datagroup" whe way it is shown)
+#
+# ltm data-group internal url_datagroup {
+#     records {
+#         www.blah.com:/blah {
+#             data www.test.com:/test
+#         }
+#         www.foo.com:/foo {
+#             data www.bar.com:/bar
+#         }
+#     }
+#     type string
+# }
+
+when HTTP_REQUEST priority 500 {
+    log local0. "Incoming request: [HTTP::host]:[HTTP::uri]"
+
+    # Match first match if it start with the record value - be mindful of accidental matches that may occur
+    # Alternativly can Check and match it exactly matches the record value - 'equals' instead of 'starts_with'
+    # But if using 'equal' then you would need to be mindful of accidental misses that may occur due to more path or paramaters
+    if { [set match [class match -value -- "[HTTP::host]:[HTTP::uri]" starts_with url_datagroup]] ne "" } {
+
+        log local0. "Datagroup match: $match"
+        ## Get first URI path in client request
+        set FIRSTPATH [getfield [HTTP::path] "/" 2]
+
+        # Set Original External Host value for use if needed in Response
+        set ORIGINALHOST [HTTP::host]
+
+        ## Split match into host and path
+        set matchlist [split $match ":"]
+        set MATCHHOST [lindex $matchlist 0]
+        set MATCHPATH [lindex $matchlist 1]
+
+        ## Replace FIRSTPATH with MATCHPATH (from full HTTP::uri)
+        set UPDATEDPATH [string map [list "/$FIRSTPATH" "$MATCHPATH"] [HTTP::uri]]
+        log local0. "Updated host: $MATCHHOST"
+        log local0. "Updated path: $UPDATEDPATH"
+
+        HTTP::host $MATCHHOST
+        HTTP::uri $UPDATEDPATH
+
+        # Can now assign to specific Virtual or Pool - One or other not both
+        # virtual "/partition/app-folder/selected-example-vip"
+        # pool "/partition/app-folder/selected-example-pool"
+
+        # If in same context as iRule execution can use short name reference
+        # virtual "virtual_server_name"
+        # virtual "poolname"
+    }
+}
+
+when HTTP_RESPONSE priority 500 {
+# On response may need to translate back some elements , easier in just redirect headers, more work if needed in data stream
+
+    # Example of catching 3xx redirects that serer may send back to client and rewriting them
+    if {[HTTP::header exists Location] } {
+    }
+
+    if {[HTTP::header exists Location] } {
+        # Log value at start
+        log local0. "Received redirect was [IP::server_addr] -> [HTTP::header Location]"
+
+        # Replace any (first match in string) reference to new Host ($MATCHHOST) with Original Host ($ORIGINALHOST) value
+        HTTP::header replace Location [string map {"$MATCHHOST" "$ORIGINALHOST"} [HTTP::header Location]]
+
+        # Log value at end
+        log local0. "Received redirect now [IP::server_addr] -> [HTTP::header Location]"
+    }
+
+}
