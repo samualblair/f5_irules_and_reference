@@ -1,0 +1,20 @@
+# Name: http_set_favicon_response_type_correctly
+# Author: Michael Johnson
+# Description: F5 iRule example to ensure favicon type is set properly on responses to client icon requests
+
+# Commonly server and/or proxy will cause content type to be incorrectly sent, so icon will not be presented to user
+# This just ensures that content type is set correctly so client browser/system will presnt it correctly
+# The expectation is the server has provided the icon (status code 200) and the iRule is just updating the content type value
+
+when HTTP_REQUEST priority 500 {
+  if { [HTTP::uri] equals "/favicon.ico" } {
+    set favicon 1
+  } else {
+    set favicon 0
+  }
+}
+when HTTP_RESPONSE priority 500 {
+  if { $favicon and [HTTP::status] == 200 } {
+    HTTP::header replace "Content-Type" "image/x-icon"
+  }
+}
