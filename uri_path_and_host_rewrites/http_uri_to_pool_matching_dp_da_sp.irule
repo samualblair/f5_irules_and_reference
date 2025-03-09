@@ -1,0 +1,38 @@
+# Name: http_uri_to_pool_matching_dp_da_sp
+# Author: Michael Johnson
+# Description: Dynamic iRule for URI to Pool Mapping - Dynamic Parition and APP Folder, static Pool Name
+
+# Alternatives ways to match if desired:
+# switch -glob -- [string tolower [HTTP::path -normalized]] {
+# Can skip the http normalized if desired but may allow for edge failures
+# switch -glob -- [string tolower [HTTP::path]] {
+# Can also make the match case sensitive (against RFC) then just
+# switch -glob -- [HTTP::path] {
+# See: https://www.rfc-editor.org/rfc/rfc9110
+
+# Can also match with URI command instead of PATH if needed, but longer string generally
+# switch -glob -- [string tolower [HTTP::uri -normalized]] {
+
+when HTTP_REQUEST priority 500 {
+  set virtualPartition [lindex [split [virtual name] /] 1]
+  set virtualApp [lindex [split [virtual name] /] 2]
+
+  # To ensure matching is not case sensative
+  switch -glob -- [string tolower [HTTP::path -normalized]] {
+    "/FirstSite*" {
+      pool /${virtualPartition}/${virtualApp}/SERVER_POOL
+    }
+    "/SecondSite*" {
+      pool /${virtualPartition}/${virtualApp}/SERVER_POOL_02
+    }
+    "/checkoutapi*" {
+      pool /${virtualPartition}/${virtualApp}/SERVER_POOL_03
+    }
+    "/calanderapi*" {
+      pool /${virtualPartition}/${virtualApp}/SERVER_POOL_04
+    }
+    "/OtherExample*" {
+      pool /${virtualPartition}/${virtualApp}/SERVER_POOL_05
+    }
+  }
+}

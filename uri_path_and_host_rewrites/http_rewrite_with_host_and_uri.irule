@@ -4,14 +4,27 @@
 
 when HTTP_REQUEST priority 500 {
 
-  # Explicit rewrite but also Host Header update as well)
-  set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+  # Update Header
   HTTP::header replace Host "new.example.com"
+
+  # set host [HTTP::host]
+  # set uri [HTTP::uri]
+  set path [HTTP::path -normalized]
+  set query [HTTP::query]
+
+  # Option 1 - Explicit rewrite with direct Path Update
+  set newpath [string map -nocase {"/oldpath" "/newpath"} $path]
+  HTTP::path "$newpath"
+
+  # Option 2 - Update by updating uri - May work better in some cases
   set newpath [string map -nocase {"/oldpath" "/newpath"} $path]
   if {$query eq ""} {
-    HTTP::uri "$newpath" 
+    HTTP::uri "$newpath"
   } else {
-    HTTP::uri "$newpath?$query" 
+    HTTP::uri "[$newpath]?$query" 
   }
+
+  # Could also explicity set the path to be lowercase if desired
+  # set path [string tolower [HTTP::path -normalized]]
 
 }
