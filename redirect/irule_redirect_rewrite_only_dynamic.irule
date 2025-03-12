@@ -1,0 +1,59 @@
+# Name: irule_redirect_rewrite_only_dynamic
+# Author: Michael Johnson
+# Description: F5 iRule template / example for just redirect rewrites , or host header rewrite (no pathing/routing logic) - dynamic
+
+when RULE_INIT priority 100 { 
+
+   # Set the hostname that the client makes request to (do not include protocol)  
+   set ::external_hostname "external.example.com"
+
+   # Set the hostname that the BIG-IP will rewrite requests to  
+   set ::internal_hostname "internal.example.com"
+
+   # Redirect / requests to this URI  
+   set ::root_redirect_uri "/basefile.asp"
+
+   # Log debug messages to /var/log/ltm? 1=yes, 0=no.  
+   set ::proxy_site_debug 1
+
+}
+
+when HTTP_REQUEST priority 500 { 
+
+   if {$::proxy_site_debug}{log local0. "Received request from [IP::client_addr] -> [HTTP::host][HTTP::uri]"}  
+
+   # Check if request is to root document  
+
+   # Redirect to internal hostname and root object  
+   if {[HTTP::path] eq "/"}{ 
+ 
+      if {$::proxy_site_debug}{log local0. \  
+         "Redirecting [IP::client_addr] from / -> https://$::external_hostname$::root_redirect_uri"}  
+ 
+      HTTP::redirect "https://$::external_hostname$::root_redirect_uri"  
+ 
+   } else {  
+ 
+      if {$::proxy_site_debug}{log local0. "Rewriting [IP::client_addr]'s Host header to $::internal_hostname"}  
+ 
+      # We're not redirecting so rewrite the Host header   
+      HTTP::header replace "Host" $::internal_hostname  
+   }  
+
+}  
+when HTTP_RESPONSE priority 500 {  
+ 
+    # Try and only Key in on redirects (301,302,303,305,307) - may not catch all types of 3xx types though...
+    # See https://clouddocs.f5.com/api/irules/HTTP__is_redirect.html
+    # Check if the status code indicates the message is a redirect
+   if {[HTTP::is_redirect]} {  
+ 
+      # Debug log if turned on in iRule
+      if {$::proxy_site_debug}{log local0. "Rewriting [IP::client_addr]'s redirect to \  
+         [string map -nocase $::internal_hostname $::external_hostname [HTTP::header Location]]"}  
+ 
+      # Rewrite the Location header replacing the internal hostname with the external hostname  
+      HTTP::header replace Location [string map -nocase $::internal_hostname $::external_hostname [HTTP::header Location]]  
+   }  
+
+}  

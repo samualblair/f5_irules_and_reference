@@ -1,0 +1,57 @@
+# Name: irule_redirect_rewrite_only
+# Author: Michael Johnson
+# Description: F5 iRule template / example for just redirect rewrites , or host header rewrite (no pathing/routing logic)
+
+when RULE_INIT priority 100 { 
+
+   # Set the hostname that the client makes request to (do not include protocol)  
+   set ::external_hostname "external.example.com"
+
+   # Log debug messages to /var/log/ltm? 1=yes, 0=no.  
+   set ::proxy_site_debug 1
+}
+
+when HTTP_REQUEST priority 500 {
+
+    # If required change host header as request is inbound from client
+    if { [string tolower [HTTP::host]] equals $::external_hostname } { HTTP::header replace "Host" "internal.example.com" }
+
+}
+
+when HTTP_RESPONSE priority 500 {
+
+    # Option 1 - Try and only Key in on redirects (301,302,303,305,307) - may not catch all types of 3xx types though...
+    # See https://clouddocs.f5.com/api/irules/HTTP__is_redirect.html
+    # Check if the status code indicates the message is a redirect
+    if {[HTTP::is_redirect]} {  
+    
+        # Debug log if turned on in iRule
+        if {$::proxy_site_debug}{log local0. "Rewriting [IP::client_addr]'s redirect to \  
+            [string map -nocase $::internal_hostname $::external_hostname [HTTP::header Location]]"}  
+    
+        # Rewrite the Location header replacing the internal hostname with the external hostname  
+        HTTP::header replace Location [string map -nocase $::internal_hostname $::external_hostname [HTTP::header Location]]  
+    }  
+
+    # Option 2 - Look for Location headers (should only be present on redirects)
+    # Catch and replace redirect headers
+    if {[HTTP::header exists Location] } {
+        HTTP::header replace Location [string map {"http://internal.example.com" "https://external.example.com/arcgis"} [HTTP::header Location]]
+        }
+
+    # Additional Step for embbeded Data/Payload changes if needed 
+    # Enable the stream filter for text responses only and allow in-data replacements
+    # Helpful or sometimes needed with limited or misconfigured oAuth , SAML, etc, but caution if data is signed/hashed as changes would be detected
+    # Also take care for Stream enable/disable, and interactions with non-LTM modules such as APM
+    if {
+        [HTTP::header value Content-Type] contains "text"
+        } {
+
+        # Replace 'old_text' with 'new_text'
+        STREAM::expression {@http://internal.example.com@https://external.example.com@} 
+
+        # Enable the stream filter
+        STREAM::enable
+    }
+
+}
