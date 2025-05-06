@@ -1,0 +1,24 @@
+# Name: Example HTTP based Debugging iRule using local logging - Focused on Server Response Headers
+# Author: Michael Johnson
+
+#### DEUBG LOGGING IRULE - ONLY RUN FOR TESTING #######
+
+# Example Irule to log all HTTP headers sent back from a specific server
+# Change Variable orgin_server_ip to key in on specific server
+when HTTP_RESPONSE priority 600 {
+    set orgin_server_ip "192.168.252.50"
+    if {[IP::addr [IP::server_addr] equals $orgin_server_ip]} {
+        foreach aHeader [HTTP::header names] {
+        log local0. "HTTP Request Headers: $aHeader: [HTTP::header value $aHeader]"
+    }
+}
+
+# Eample Irule to log all HTTP headers sent back from a specific server but only when 40 or more headers are present
+# Change Variable orgin_server_ip to key in on specific server
+when HTTP_RESPONSE priority 700 {
+    set orgin_server_ip "192.168.252.50"
+    if {[IP::addr [IP::server_addr] equals $orgin_server_ip] && [[HTTP::header count] >= 40]} {
+        foreach aHeader [HTTP::header names] {
+        log local0. "HTTP Request Headers: $aHeader: [HTTP::header value $aHeader]"
+    }
+}
