@@ -42,4 +42,15 @@ when HTTP_RESPONSE priority 400 {
     foreach sHeader [HTTP::header names] {
         log local0. "APP HTTP Response Headers: $sHeader: [HTTP::header value $sHeader]"
     }
+
+}
+when HTTP_RESPONSE_RELEASE priority 400 {
+    log local0. "APP Response_Release from [IP::client_addr]"
+    log local0. "APP Response_Release HTTP Host Header = [HTTP::header value "host"]"
+    log local0. "APP Response_Release HTTP Status = [HTTP::status]"
+
+    foreach sHeader [HTTP::header names] {
+        log local0. "APP HTTP Response_Release Headers: $sHeader: [HTTP::header value $sHeader]"
+    }
+
 }
