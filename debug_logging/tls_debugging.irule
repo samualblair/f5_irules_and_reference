@@ -1,0 +1,54 @@
+# Name: Example TLS Debugging iRule
+# Modified from original base shared by F5 - https://my.f5.com/manage/s/article/K86071030
+# Author: Michael Johnson
+
+# Important: 
+# The iRules will not log the connection which are failed due to unsupported SSL/TLS versions in case where old SSL/TLS versions like TLSv1 or TLSv1.1 are disabled in ClientSSL profile on virtual server. The reason its not logging the log like from iRule when we access the VS on the disabled TLS versions (TLSv1 & TLSv1.1), 
+# because the iRule is not getting fired because the handshake is denied at the protocol level before the iRule fires.
+# In those cases, enable SSL Debug Logs
+# For Example in GUI , System > Logs > Configuration > Options > SSL > Debug.
+
+when CLIENTSSL_CLIENTHELLO priority 400 {
+    # Log when client provides SSL/TLS Offer
+    log local0. "From IP: [IP::client_addr] - cipher: [SSL::cipher name] - version: [SSL::cipher version]"
+}
+
+when CLIENTSSL_HANDSHAKE priority 400 {
+    # Log if known weak cipher is found
+    if { ( [SSL::cipher name] contains "DES" ) }
+    {
+        log local0. "DETECTED-DES - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+    elseif { ( [SSL::cipher name] contains "RC4" ) }
+    {
+        log local0. "DETECTED-DES - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+
+    # Log if known weak cipher length is found
+    if { ( [SSL::cipher bits] < 128 ) }
+    {
+        log local0. "DETECTED-LESS128-CIPHER - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+
+    # Log protocol version negotiated
+    if { ( [SSL::cipher version] contains "SSL" ) }
+    {
+        log local0. "DETECTED-SSL - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+    elseif { ( [SSL::cipher version] equals "TLSv1" ) }
+    {
+        log local0. "DETECTED-TLSv1.0-CONNECTION - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+    elseif { ( [SSL::cipher version] equals "TLSv1.1" ) }
+    {
+        log local0. "DETECTED-TLSv1.1-CONNECTION - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+    elseif { ( [SSL::cipher version] equals "TLSv1.2" ) }
+    {
+        log local0. "DETECTED-TLSv1.2-CONNECTION - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+    elseif { ( [SSL::cipher version] equals "TLSv1.3" ) }
+    {
+        log local0. "DETECTED-TLSv1.3-CONNECTION - LOG_SSL_LEVEL - Client: [IP::client_addr] successfully negotiates [SSL::cipher version] - [SSL::cipher name] - [SSL::cipher bits] - For the VIP - [virtual name]"
+    }
+}
