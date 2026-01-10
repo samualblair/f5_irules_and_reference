@@ -1,5 +1,5 @@
 # Name: tcp_proxy_protocol_v1_initiator
-# Author: Michael Johnson (Oringal Author unkown)
+# Author: Michael Johnson (Original Author unknown)
 # Description: iRule for implementing TCP Proxy Protocol v1 initiator
 
 # Implements Proxy Protocol v1 initiator
