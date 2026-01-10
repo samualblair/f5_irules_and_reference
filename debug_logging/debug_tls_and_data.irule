@@ -1,0 +1,56 @@
+# Name: TLS Debugging iRule - Focused on Standup and Initial Data
+# Modified from original base shared by F5 - https://my.f5.com/manage/s/article/K41861214
+# Author: Michael Johnson
+
+# The original rule from F5 article marketed as SSL/TLS debugging iRule
+# Logs Focused on HTTP Protocol (Headers) and small amount of data (payload of 512 bytes) which can be helpful to debug relevant SSL/TLS setup
+
+when CLIENT_ACCEPTED priority 500 {
+  if { [clientside {IP::remote_addr}] == "<CLIENT_IP>" } {
+    set Debug_Enable true
+    log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]"
+    TCP::collect
+  } else {
+    set Debug_Enable false
+  }
+}
+
+when CLIENT_DATA priority 500 {
+  log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L4C>S [TCP::payload length] [b64encode [TCP::payload 512]]"
+  TCP::release
+}
+
+when HTTP_REQUEST priority 500 {
+  if { [info exists Debug_Enable] && $Debug_Enable } {
+    log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L7C>S Hd [HTTP::method] [HTTP::uri]"
+      foreach aHeader [HTTP::header names] {
+        log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L7C>S Hd $aHeader: [HTTP::header values $aHeader]"
+      }
+      log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L7C>S Bd [b64encode [HTTP::payload 512]]"
+      log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: --== ## ==--"
+    }
+  }
+
+when HTTP_REQUEST_SEND priority 500 {
+  if { [info exists Debug_Enable] && $Debug_Enable } {
+    log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: -> balanced to -> [serverside {IP::remote_addr}]:[serverside {TCP::remote_port}]"
+    TCP::collect
+  }
+}
+
+when SERVER_DATA priority 500 {
+  log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: <- balancing from <- [serverside {IP::remote_addr}]:[serverside {TCP::remote_port}]"
+  log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L4C<S [TCP::payload length] [b64encode [TCP::payload 512]]"
+  TCP::release
+}
+
+when HTTP_RESPONSE priority 500 {
+  if { [info exists Debug_Enable] && $Debug_Enable } {
+    log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L7C<S Hd [HTTP::status]"
+      foreach aHeader [HTTP::header names] {
+      log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L7C<S Hd $aHeader: [HTTP::header value $aHeader]"
+    }
+    log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: L7C<S Bd [b64encode [HTTP::payload 512]]"
+    log local0.debug "[clientside {IP::remote_addr}]:[clientside {TCP::remote_port}] [clock clicks -milliseconds]: --== ## ==--"
+  }
+}

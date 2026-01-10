@@ -1,4 +1,4 @@
-# Name: Example TLS Debugging iRule
+# Name: TLS Debugging iRule - Focused on Protocol and Cipher Selection
 # Modified from original base shared by F5 - https://my.f5.com/manage/s/article/K86071030
 # Author: Michael Johnson
 
