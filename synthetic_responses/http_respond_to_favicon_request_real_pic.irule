@@ -39,7 +39,7 @@ when HTTP_REQUEST priority 200 {
   # log local0. "Favicon Response File: $file"
   # When needed provide a synthetic favicon response
   if { $favicon} {
-    HTTP::respond -reset 200 ifile "/Common/ifileICON" "Content-Type" "image/x-icon"
+    HTTP::respond 200 ifile "/Common/ifileICON" "Content-Type" "image/x-icon"
     # BIG-IP adds a header to indicate it sent the response not actual server, nice feature, if you wish to hide this from clients add "noserver" to command:
     # HTTP::respond -reset 200 ifile "/Common/ifileICON" noserver "Content-Type" "image/x-icon"
   }

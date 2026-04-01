@@ -13,6 +13,6 @@ when HTTP_REQUEST priority 200 {
 
   # When needed provide a synthetic favicon response
   if { $favicon} {
-    HTTP::respond -reset 200 -version auto content "" noserver "Content-Type" "image/x-icon"
+    HTTP::respond 200 -version auto content "" noserver "Content-Type" "image/x-icon"
   }
 }
