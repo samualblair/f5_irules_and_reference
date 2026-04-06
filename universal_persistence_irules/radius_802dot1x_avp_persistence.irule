@@ -1,0 +1,53 @@
+# Name: radius_802dot1x_avp_persistence
+# Description: iRule for implementing TCP Proxy Protocol v1 initiator
+# Author: Michael Johnson (modifications)
+# Original Author: thomas
+# https://community.cisco.com/t5/security-knowledge-base/how-to-cisco-amp-f5-deployment-guide-ise-load-balancing-using/ta-p/3631159
+
+# Radius AVP type standards published at IANA
+# https://www.iana.org/assignments/radius-types/radius-types.xhtml
+
+# Radius 802dot1x Persistence iRule based on Calling-Station-Id (MAC Address) with fallback to NAS-IP-Address as persistence identifier
+# Matches a Cisco ISE community guide, can also work well with other Radius 802.1x Servers
+# Pay close attention to which avp are matched and used, different systems will use different avp
+
+when CLIENT_DATA priority 500 {
+    # 0: No Debug Logging  1: Debug Logging
+    set debug 0
+
+    # Persist timeout (seconds)
+    set nas_port_type [RADIUS::avp 61 "integer"]
+    if {$nas_port_type equals "19"} {
+        set persist_ttl 3600
+        if {$debug} {
+            set access_media "Wireless"
+        }
+    } else {
+        set persist_ttl 28800
+        if {$debug} {
+            set access_media "Wired"
+        }
+    }
+
+    # If MAC address is present - use it as persistent identifier
+    # See Radius AV Pair documentation on https://devcentral.f5.com/wiki/irules.RADIUS__avp.ashx
+    if {[RADIUS::avp 31] ne "" } {
+        set mac [RADIUS::avp 31 "string"]
+
+        # Normalize MAC address to upper case
+        set mac_up [string toupper $mac]
+        persist uie $mac_up $persist_ttl
+        if {$debug} {
+	        set target [persist lookup uie $mac_up] 
+			log local0.alert "Username=[RADIUS::avp 1] MAC=$mac Normal MAC=$mac_up MEDIA=$access_media TARGET=$target"
+		}
+
+    } else {
+        set nas_ip [RADIUS::avp 4 ip4]
+        persist uie $nas_ip $persist_ttl
+        if {$debug} {
+		    set target [persist lookup uie $nas_ip]
+            log local0.alert "No MAC Address found - Using NAS IP as persist id. Username=[RADIUS::avp 1] NAS IP=$nas_ip MEDIA=$access_media TARGET=$target"
+	    }
+    }
+}
