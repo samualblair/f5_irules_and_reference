@@ -64,12 +64,26 @@ Can use --resolve to override normal dns lookup on system.
 This can be a nice alternative to overriding cert (assuming cert is present and valid) and also allows host header to be automatically applied.
 Scheme must match, expected port and hostname or it will not perform override:
 ```bash
-curl --location https://www.example.com:443/ --resolve domain.example.com:10.44.204.225
-curl --location https://www.example.com:8443/ --resolve domain.example.com:8443:10.44.204.225
-curl --location http://www.example.com:8080/ --resolve domain.example.com:8080:10.44.204.225
+# When using http :80, and https port :443 can be used but may be easy to mistake as now location hostname and resolve hostname look different
+curl --location https://www.example.com/ --resolve www.example.com:443:10.44.204.225
+# Can always explicitly put port even for defaults like 80 and 443 in the location header, then it matches the resolve
+curl --location https://www.example.com:443/ --resolve www.example.com:443:10.44.204.225
+# With custom port locations they are always required in both the location and the resolve statement
+curl --location https://www.example.com:8443/ --resolve www.example.com:8443:10.44.204.225
+curl --location http://www.example.com:8080/ --resolve www.example.com:8080:10.44.204.225
 ```
 
-Can alsways add Headers manually with one or more \'-H\', several of these would be auto-added normally (user agent, host, etc.)
+When testing with SNI for example can use curl or openssl
+```bash
+curl -vk --resolve "www.example.com:443:10.44.204.225" --location "https://www.example.com:443/favicon.ico" -H "Connection: close"
+
+openssl s_client -connect www.example.com:443 -showcerts  </dev/null 2>/dev/null
+
+# Can connect to an IP and include servername explicitly if needed which will include proper SNI
+openssl s_client -connect 198.51.100.50:443 -servername www.example.com -showcerts  </dev/null 2>/dev/null
+```
+
+Can always add Headers manually with one or more \'-H\', several of these would be auto-added normally (user agent, host, etc.)
 ```bash
 -H "Host: domain.example.com"
 -H "User-Agent: curl/8.7.1"
