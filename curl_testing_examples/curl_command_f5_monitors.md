@@ -83,3 +83,15 @@ A forced HTTP 3 monitor - on BIG-IP this would be a dedicate monitor type, may n
 ```bash
 curl -v http://198.51.100.50:1234/ --http3 -H "Host: myapp.example.com" -H "Connection: Close" -H "Accept:" -H "User-Agent: BIG-IP Monitor"
 ```
+
+### Notes regarding regex
+
+Helpful for monitors or other tests
+```
+# RE2 Regular Expression for matching all http versions - this is a full string match due to $
+^HTTP\/[1-3](\.[0-1])?$
+# RE2 Regular Expression matching and allows for partial match of line
+^HTTP\/[1-3](\.[0-1])?
+# A Good example of Valid RE2 Regular Expression expecting a 200 OK match
+^HTTP\/[1-3](\.[0-1])? 200 OK
+```
