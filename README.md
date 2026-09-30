@@ -67,4 +67,5 @@ Michael Johnson ([@samualblair](https://github.com/samualblair))
 ## Versioning
 [![CalVer](https://img.shields.io/static/v1?label=CalVer&message=YY.0M.0D)](https://calver.org/)
 
+* 2026.09.30 - Updates across most categories
 * 2025.04.08 - General release
