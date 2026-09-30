@@ -24,9 +24,12 @@ when HTTP_REQUEST priority 500 {
 
     # Match first match if it start with the record value - be mindful of accidental matches that may occur
     # Alternativly can Check and match it exactly matches the record value - 'equals' instead of 'starts_with'
+    # noqa: W111
     # But if using 'equal' then you would need to be mindful of accidental misses that may occur due to more path or paramaters
+
     if { [set match [class match -value -- "[HTTP::host]:[HTTP::uri]" starts_with datagroup_Name]] ne "" } {
         # ... match is true if the match is made
+        # noqa: W111
         # ... value will be the matched data group value to be used in replacing HTTP:host and HTTP::uri] and applied to variable $match
 
         log local0. "Datagroup match: $match"

@@ -9,7 +9,11 @@ when HTTP_RESPONSE priority 600 {
     set orgin_server_ip "192.168.252.50"
     if {[IP::addr [IP::server_addr] equals $orgin_server_ip]} {
         foreach aHeader [HTTP::header names] {
-        log local0. "HTTP Request Headers: $aHeader: [HTTP::header value $aHeader]"
+            # Remove all new lines from string prior to logging - could use string map, regsub, or regex
+            regsub -all {\r|\n} $aHeader {} aHeader_clean
+            regsub -all {\r|\n} [HTTP::header value $aHeader] {} aHeader_value_clean
+            log local0. "HTTP Request Headers: $aHeader_clean: $aHeader_value_clean"
+        }
     }
 }
 
@@ -17,8 +21,13 @@ when HTTP_RESPONSE priority 600 {
 # Change Variable orgin_server_ip to key in on specific server
 when HTTP_RESPONSE priority 700 {
     set orgin_server_ip "192.168.252.50"
-    if {[IP::addr [IP::server_addr] equals $orgin_server_ip] && [[HTTP::header count] >= 40]} {
+    set total_header_count [HTTP::header count]
+    if {[IP::addr [IP::server_addr] equals $orgin_server_ip] && [$total_header_count >= 40]} {
         foreach aHeader [HTTP::header names] {
-        log local0. "HTTP Request Headers: $aHeader: [HTTP::header value $aHeader]"
+            # Remove all new lines from string prior to logging - could use string map, regsub, or regex
+            regsub -all {\r|\n} $aHeader {} aHeader_clean
+            regsub -all {\r|\n} [HTTP::header value $aHeader] {} aHeader_value_clean
+            log local0. "HTTP Request Headers: $aHeader_clean: $aHeader_value_clean"
+        }
     }
 }

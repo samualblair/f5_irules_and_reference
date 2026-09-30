@@ -3,6 +3,7 @@
 # Author: Michael Johnson
 
 # Important: 
+# noqa: W111
 # The iRules will not log the connection which are failed due to unsupported SSL/TLS versions in case where old SSL/TLS versions like TLSv1 or TLSv1.1 are disabled in ClientSSL profile on virtual server. The reason its not logging the log like from iRule when we access the VS on the disabled TLS versions (TLSv1 & TLSv1.1), 
 # because the iRule is not getting fired because the handshake is denied at the protocol level before the iRule fires.
 # In those cases, enable SSL Debug Logs

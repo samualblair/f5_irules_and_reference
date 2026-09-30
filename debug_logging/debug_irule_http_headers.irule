@@ -4,7 +4,7 @@
 #### DEUBG LOGGING IRULE - ONLY RUN FOR TESTING #######
 
 when HTTP_REQUEST priority 400 {
-    if {[string match "*\examplesite.example.com/main.js/*" [HTTP::path]]} {
+    if {[string match "*\\examplesite.example.com/main.js/*" [HTTP::path]]} {
         log local0. "APP request Received request from [IP::client_addr]"
         log local0. "APP request HTTP Method = [HTTP::method]"
         log local0. "APP request HTTP URI = [HTTP::uri]"

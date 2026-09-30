@@ -3,6 +3,7 @@
 # Author: Michael Johnson
 
 # The original rule from F5 article marketed as SSL/TLS debugging iRule
+# noqa: W111
 # Logs Focused on HTTP Protocol (Headers) and small amount of data (payload of 512 bytes) which can be helpful to debug relevant SSL/TLS setup
 
 when CLIENT_ACCEPTED priority 500 {

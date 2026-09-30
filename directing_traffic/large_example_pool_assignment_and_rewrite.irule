@@ -11,7 +11,9 @@ when HTTP_REQUEST priority 400 {
 
     # Use Switch instead of many if,elif,else type statements
     # Current style works well, but does introduce some edge cases (exact matches required in URI)
+    # noqa: W111
     # May look into keying in on HTTP::path instead of just uri, but would require additional if logic to catch no path cases
+    
     switch -glob -- [HTTP::uri] {
         "/portal" {
         # Simple redirect only when portal without trailing / is targeted
