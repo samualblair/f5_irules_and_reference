@@ -8,13 +8,13 @@
 A Collection of F5 iRule Scripts
 Additional Reference Material, related and useful also included.
 
-Various F5 iRule scripts / example templates. F5 iRules API is based on Tcl scripting language. Also includes useful reference material, for example cURL usage for debuging and monitor building.
+Various F5 iRule scripts / example templates. F5 iRules API is based on Tcl scripting language. Also includes useful reference material, for example cURL usage for debugging and monitor building.
 
 ## Sections
 
 ### Rewrite, Redirect, and Directing Traffic
-These iRules expect HTTP proxy functionailty (L7 HTTP Proxy).
-Some crossover functionailty exists in these categories:
+These iRules expect HTTP proxy functionality (L7 HTTP Proxy).
+Some crossover functionality exists in these categories:
 
 * uri_path_and_host_rewrites
 
@@ -51,15 +51,15 @@ These iRules expect HTTP proxy functionailty (L7 HTTP Proxy).
 
 * smtp
 
-    Not commently used, but irules for working with SMTP (mail) in various situations.
+    Not commonly used, but iRules for working with SMTP (mail) in various situations.
 
 * debug_logging
 
-    Example irules for logging, either temporary (debug) or for longer term HSL deployments to external log servers.
+    Example iRules for logging, either temporary (debug) or for longer term HSL deployments to external log servers.
 
 * curl_testing_examples
 
-    As the name sugests, this is not irules but simply some reference examples of cURL tool usage for testing. cURL is available in F5 bash shell, as well as many Linux systems by default, it is also easily obtainable for other OSes.
+    As the name suggests, these are not iRules but simply some reference examples of cURL tool usage for testing. cURL is available in F5 bash shell, as well as many Linux systems by default, it is also easily obtainable for other OSes.
 
 ## Authors
 Michael Johnson ([@samualblair](https://github.com/samualblair))
