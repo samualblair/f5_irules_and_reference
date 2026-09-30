@@ -3,6 +3,7 @@
 [![F5-TMSH-Reference](https://img.shields.io/badge/F5_TMSH_Reference-red)](https://clouddocs.f5.com/cli/tmsh-reference/latest/)
 [![F5-iRules-Home](https://img.shields.io/badge/F5_iRules_Home-red)](https://clouddocs.f5.com/api/irules/)
 [![Tcl](https://img.shields.io/badge/Tcl_Reference-orange)](https://curl.se/download.html)
+[![tcl-lsp](https://img.shields.io/badge/tcl--lsp-orange)](https://github.com/bitwisecook/tcl-lsp)
 [![cURL](https://img.shields.io/badge/cURL-8.7.1|latest-blue)](https://curl.se/download.html)
 
 A Collection of F5 iRule Scripts
