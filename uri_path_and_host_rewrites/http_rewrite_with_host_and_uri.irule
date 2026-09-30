@@ -10,7 +10,7 @@ when HTTP_REQUEST priority 500 {
   # set host [HTTP::host]
   # set uri [HTTP::uri]
   set path [HTTP::path -normalized]
-  set query [HTTP::query]
+  set query [HTTP::query -normalized]
 
   # Option 1 - Explicit rewrite with direct Path Update
   set newpath [string map -nocase {"/oldpath" "/newpath"} $path]
@@ -21,10 +21,12 @@ when HTTP_REQUEST priority 500 {
   if {$query eq ""} {
     HTTP::uri "$newpath"
   } else {
-    HTTP::uri "[$newpath]?$query" 
+    HTTP::uri "$newpath\?$query" 
   }
 
-  # Could also explicity set the path to be lowercase if desired
+  # Could also explicitly set the path to be lowercase if desired
   # set path [string tolower [HTTP::path -normalized]]
+  # Are there corner cases where 'normalization' can cause problems? If so potentially can use without normalization.
+  # set query [HTTP::query]
 
 }

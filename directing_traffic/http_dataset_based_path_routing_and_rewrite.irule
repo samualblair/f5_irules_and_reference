@@ -1,4 +1,4 @@
-# WARNING: UNTESTED IN CURRENT FORM 3-8-2025
+# WARNING: UNTESTED IN CURRENT FORM 9-30-2026
 # Name: http_dataset_based_path_routing_and_rewrite
 # Author: Michael Johnson
 # Description: F5 iRule template / example for routing and rewrites based on a dataset
@@ -22,11 +22,12 @@ when HTTP_REQUEST priority 500 {
 
     # DEBUG: Log Pre Operations - HOST, URI, PATH, QUERY
     log local0. "Original HOST : [HTTP::host]"
-    log local0. "Original URI  : [HTTP::uri]"
-    log local0. "Original PATH : [HTTP::path]"
-    log local0. "Original QUERY: [HTTP::query]"
+    log local0. "Original URI  : [HTTP::uri -normalized]"
+    log local0. "Original PATH : [HTTP::path -normalized]"
+    log local0. "Original QUERY: [HTTP::query -normalized]"
 
-    set uri [HTTP::uri]; set path [HTTP::path]; set query [HTTP::query]
+    # In some cases normalized may break things - and may have to use some parts without the '-normalized' flag
+    set uri [HTTP::uri -normalized]; set path [HTTP::path -normalized]; set query [HTTP::query -normalized]
     # Update the Host statically
     HTTP::host "example.com"
 
@@ -39,14 +40,14 @@ when HTTP_REQUEST priority 500 {
         log local0. "replacing $path with $dgValue"
 
         set newpath [string map -nocase { $dgValue "/mnp/"} $path]
-        HTTP::uri "$newpath$query"
+        HTTP::uri $newpath$query
 
     }
 
         # DEBUG: Log Post Operations - HOST, URI, PATH, QUERY
         log local0. "New HOST : [HTTP::host]"
-        log local0. "New URI  : [HTTP::uri]"
-        log local0. "New PATH : [HTTP::path]"
-        log local0. "New QUERY: [HTTP::query]"
+        log local0. "New URI  : [HTTP::uri -normalized]"
+        log local0. "New PATH : [HTTP::path -normalized]"
+        log local0. "New QUERY: [HTTP::query -normalized]"
 
 }

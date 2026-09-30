@@ -1,0 +1,53 @@
+# WARNING: UNTESTED IN CURRENT FORM 9-30-2026
+# Name: Simple Connection High Speed Logging iRule Examples
+# Author: Michael Johnson
+
+# You need to ensure you have already configured a HighSpeed Publisher to reference
+# If planning to use 'Splunk' format or key-value pairs need to format correctly like JSON
+when CLIENT_ACCEPTED priority 500 {
+  set my_hsl [HSL::open -publisher /Common/MyLogPublisher123]
+}
+
+# Log L4 (TCP) Connection information
+# If planning to use 'Splunk' format or key-value pairs need which F5 will to format correctly like JSON
+# Alternatively if using normal HSL you can format into a JSON yourself but that may be more likely to have errors
+# In this Example we must wait until after we are confident a back-end connection has been built or there will not be a Server Side IP and Port
+when SERVER_CONNECTED priority 500 {
+  # HSL::send $my_hsl ' { "Connection-Type":"TCP", "Client":"[IP::client_addr]:[TCP::client_port]", "F5-VIP":"[clientside {IP::local_addr}]:[clientside {TCP::local_port}]", "F5-SNAT":"[serverside {IP::local_addr}]:[serverside {TCP::local_port}]", "Server":"[IP::server_addr]:[serverside {TCP::remote_port}]" } '
+  HSL::send $my_hsl '\
+    Connection-Type=tcp \
+    Pre-F5-Proxy-X-Forwarded-For=[HTTP::header value X-Forwarded-For] \
+    Client=[IP::client_addr]:[TCP::client_port] \
+    F5-VIP=[clientside {IP::local_addr}]:[clientside {TCP::local_port}] \
+    F5-SNAT=[serverside {IP::local_addr}]:[serverside {TCP::local_port}] \
+    Server=[IP::server_addr]:[serverside {TCP::remote_port}] \
+    '
+}
+
+# Log a Header, in this Example X-Forwarded-For Header, will work after an HTTP Profile has manipulated it
+when HTTP_REQUEST priority 500 {
+  HSL::send $my_hsl '\
+    Connection-Type=http \
+    Pre-F5-Proxy-X-Forwarded-For=[HTTP::header value X-Forwarded-For] \
+    Client=[IP::client_addr]:[TCP::client_port] \
+    F5-VIP=[clientside {IP::local_addr}]:[clientside {TCP::local_port}] \
+    F5-SNAT=[serverside {IP::local_addr}]:[serverside {TCP::local_port}] \
+    Server=[IP::server_addr]:[serverside {TCP::remote_port}] \
+    '
+}
+
+# Create one large Log that has everything - Front end and Back end TCP and Log an X-Forwarded-For Header
+# If planning to use 'Splunk' format or key-value pairs need which F5 will to format correctly like JSON
+# Alternatively if using normal HSL you can format into a JSON yourself but that may be more likely to have errors
+# In this Example we must wait until after we are confident a back-end connection has been built or there will not be a Server Side IP and Port
+# Original X-Forwarded-For may have been re-written by this point
+when HTTP_REQUEST_RELEASE priority 500 {
+  HSL::send $my_hsl '\
+    Connection-Type=http \
+    Post-F5-Proxy-X-Forwarded-For=[HTTP::header value X-Forwarded-For] \
+    Client=[IP::client_addr]:[TCP::client_port] \
+    F5-VIP=[clientside {IP::local_addr}]:[clientside {TCP::local_port}] \
+    F5-SNAT=[serverside {IP::local_addr}]:[serverside {TCP::local_port}] \
+    Server=[IP::server_addr]:[serverside {TCP::remote_port}] \
+    '
+}

@@ -7,11 +7,12 @@ when CLIENT_ACCEPTED priority 500 {
 }
 
 # Log L4 (TCP) Connection information
-# Example might be "HTTP connection from Client 2.2.2.2:64001 to VIP 3.3.3.3:443 -> SNAT 4.4.4.4:64002 to Server 5.5.5.5:8443"
+# Example might be "TCP connection from Client 2.2.2.2:64001 to VIP 3.3.3.3:443 -> SNAT 4.4.4.4:64002 to Server 5.5.5.5:8443"
 when SERVER_CONNECTED priority 500 {
   HSL::send $my_hsl "TCP connection from \
     Client [IP::client_addr]:[TCP::client_port] to VIP [clientside {IP::local_addr}]:[clientside {TCP::local_port}] -> \
-    SNAT [serverside {IP::local_addr}]:[serverside {TCP::local_port}] to Server [IP::server_addr]:[serverside {TCP::remote_port}]"
+    SNAT [serverside {IP::local_addr}]:[serverside {TCP::local_port}] \
+    to Server [IP::server_addr]:[serverside {TCP::remote_port}]"
 }
 
 # Log a Header, in this Example X-Forwarded-For Header, will work after an HTTP Profile has manipulated it
@@ -21,10 +22,12 @@ when HTTP_REQUEST priority 500 {
 
 # Create one large Log that has everything - Front end and Back end TCP and Log an X-Forwarded-For Header
 # In this Example we must wait until after we are confident a back-end connection has been built or there will not be a Server Side IP and Port
-# Example might be "TCP connection from Pre-F5-Proxy X-Forwarded-For: 1.1.1.1 -> Client 2.2.2.2:64001 to VIP 3.3.3.3:443 -> SNAT 4.4.4.4:64002 to Server 5.5.5.5:8443"
+# Example might be "HTTP connection from Pre-F5-Proxy X-Forwarded-For: 1.1.1.1 -> Client 2.2.2.2:64001 to VIP 3.3.3.3:443 -> SNAT 4.4.4.4:64002 to Server 5.5.5.5:8443"
 when HTTP_REQUEST_RELEASE priority 500 {
   HSL::send $my_hsl "HTTP connection from \
     Pre-F5-Proxy X-Forwarded-For: [HTTP::header value X-Forwarded-For] -> \
     Client [IP::client_addr]:[TCP::client_port] to VIP [clientside {IP::local_addr}]:[clientside {TCP::local_port}] -> \
-    SNAT [serverside {IP::local_addr}]:[serverside {TCP::local_port}] to Server [IP::server_addr]:[serverside {TCP::remote_port}]"
+    SNAT [serverside {IP::local_addr}]:[serverside {TCP::local_port}] \
+    to Server [IP::server_addr]:[serverside {TCP::remote_port}] -> \
+    FQDN: [HTTP::host] URI: [HTTP::uri -normalized]"
 }

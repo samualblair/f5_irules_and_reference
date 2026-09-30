@@ -1,0 +1,20 @@
+# Name: http_send_200_response_testing_or_other
+# Author: Michael Johnson
+# Description: F5 iRule example to have F5 send a generated response
+
+# Useful when testing or logic like this can be chained to specific conditions
+# Example below responds with 503 Error (Server Unavailable) and provides a Retry-After header of 5 minutes
+
+when HTTP_REQUEST priority 500 {
+   HTTP::respond 503 -version auto content {
+      <html>
+         <head>
+            <title>Site Not Available</title>
+         </head>
+         <body>
+            We are sorry, but the site you are looking for is out of service<br>
+            If you feel you have reached this page in error, please try again.
+         </body>
+      </html>
+   } noserver "Content-Type" "text/html" "Retry-After" "300"
+}
