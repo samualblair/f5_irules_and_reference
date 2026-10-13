@@ -1,6 +1,6 @@
 
 # cURL sample command structure
-For syntetic testing or building http based monitoring.
+For synthetic testing or building http based monitoring.
 A good reference post is https://community.f5.com/discussions/technicalforum/curl-usage/330942 , some of the wording below taken from that post.
 
 ## Simple Example

@@ -1,0 +1,15 @@
+# Name: Simple Connection High Speed Logging irule Examples
+# Author: Michael Johnson
+
+# You need to ensure you have already configured a HighSpeed Publisher to reference
+when CLIENT_ACCEPTED priority 500 {
+set my_hsl [HSL::open -publisher /Common/MyLogPublisher123]
+}
+
+# Log L4 (TCP) Connection information
+when SERVER_CONNECTED priority 500 {
+  HSL::send $my_hsl "TCP connection from \
+    Client [IP::client_addr]:[TCP::client_port] to VIP [clientside {IP::local_addr}]:[clientside {TCP::local_port}] -> \
+    SNAT [serverside {IP::local_addr}]:[serverside {TCP::local_port}] \
+    to Server [IP::server_addr]:[serverside {TCP::remote_port}]"
+}
